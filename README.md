@@ -21,7 +21,7 @@ MarkLogic 6 or newer. Earlier versions do not support lexicon references.
 Usage
 ---
 
-    import module namespace cr="com.blakeley.cts-reference
+    import module namespace cr="com.blakeley.cts-reference"
       at "/path/to/cts-reference.xqy";
 
     cr:reference($xml-node)
