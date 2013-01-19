@@ -1,0 +1,251 @@
+<!--
+    : Copyright (c)2013 Michael Blakeley. All Rights Reserved.
+    :
+    : Licensed under the Apache License, Version 2.0 (the "License");
+    : you may not use this file except in compliance with the License.
+    : You may obtain a copy of the License at
+    :
+    : http://www.apache.org/licenses/LICENSE-2.0
+    :
+    : Unless required by applicable law or agreed to in writing, software
+    : distributed under the License is distributed on an "AS IS" BASIS,
+    : WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    : See the License for the specific language governing permissions and
+    : limitations under the License.
+    :
+    : The use of the Apache License does not indicate that this project is
+    : affiliated with the Apache Software Foundation.
+-->
+<!-- cf https://github.com/mblakele/xqut -->
+<suite xmlns="com.blakeley.xqut"
+       xmlns:xs="http://www.w3.org/2001/XMLSchema"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:cts="http://marklogic.com/cts"
+       xmlns:ctsref="com.blakeley.cts-reference">
+  <environment root="/Users/mblakele/Source/mblakele-ctsref/src/">
+    <import prefix="admin" ns="http://marklogic.com/xdmp/admin"
+            at="/MarkLogic/admin.xqy"/>
+    <import prefix="ctsref" ns="com.blakeley.cts-reference"
+            at="cts-reference.xqy"/>
+    <variable symbol="CFG">admin:get-configuration()</variable>
+    <variable symbol="COLL">'http://marklogic.com/collation/'</variable>
+    <variable symbol="COORD">'wgs84'</variable>
+    <variable symbol="DBID">xdmp:database()</variable>
+    <variable symbol="NS">namespace-uri(&lt;ctsref:test/>)</variable>
+  </environment>
+
+  <setup note="check for empty database">
+    sum(
+      (xdmp:estimate(collection()),
+       xdmp:estimate(xdmp:document-properties()))) ! (
+      if (0 eq .) then () else error(
+        (), 'DBNOTEMPTY',
+        text {
+          'Run these tests using an empty database.',
+          'This database contains', ., 'fragments.' }))
+  </setup>
+
+  <setup note="create dummy config">
+    xdmp:set(
+      $CFG,
+      admin:database-set-collection-lexicon($CFG, $DBID, true())),
+
+    admin:database-range-element-attribute-index(
+      'string', $NS, 'test', $NS, 'test', $COLL, false()) ! (
+      if (some $i in admin:database-get-range-element-attribute-indexes(
+        $CFG, $DBID) satisfies deep-equal(., $i)) then xdmp:set(
+        $CFG,
+        admin:database-delete-range-element-attribute-index($CFG, $DBID, .))
+      else (),
+      xdmp:set(
+        $CFG,
+        admin:database-add-range-element-attribute-index($CFG, $DBID, .))),
+
+    admin:database-range-element-index(
+      'string', $NS, 'test', $COLL, false()) ! (
+      if (some $i in admin:database-get-range-element-indexes(
+        $CFG, $DBID) satisfies deep-equal(., $i)) then xdmp:set(
+        $CFG,
+        admin:database-delete-range-element-index($CFG, $DBID, .))
+      else (),
+      xdmp:set(
+        $CFG,
+        admin:database-add-range-element-index($CFG, $DBID, .))),
+
+    admin:database-field('ctsref:test', false()) ! (
+      if (some $i in admin:database-get-fields(
+        $CFG, $DBID) satisfies deep-equal(., $i)) then xdmp:set(
+        $CFG,
+        admin:database-delete-field($CFG, $DBID, 'ctsref:test'))
+      else (),
+      xdmp:set(
+        $CFG,
+        admin:database-add-field($CFG, $DBID, .))),
+
+    admin:database-range-field-index(
+      'string', 'ctsref:test', $COLL, false()) ! (
+      if (some $i in admin:database-get-range-field-indexes(
+        $CFG, $DBID) satisfies deep-equal(., $i)) then xdmp:set(
+        $CFG,
+        admin:database-delete-range-field-index($CFG, $DBID, .))
+      else (),
+      xdmp:set(
+        $CFG,
+        admin:database-add-range-field-index($CFG, $DBID, .))),
+
+    (: TODO geo setup :)
+
+    (: TODO disabled until we figure out path namespaces. :)
+    (: bootstrap problem here... :)
+    if (1) then () else admin:database-path-namespace('ctsref', $NS) ! (
+      if (some $i in admin:database-get-path-namespaces(
+          $CFG, $DBID) satisfies deep-equal(., $i)) then ()
+      else xdmp:set(
+        $CFG,
+        admin:database-add-path-namespace($CFG, $DBID, .))),
+
+    (: TODO disabled until we figure out path namespaces. :)
+    if (1) then () else admin:database-range-path-index(
+      $DBID, 'string', '/ctsref:test/ctsref:test/ctsref:test',
+      $COLL, false(), 'ignore') ! (
+      if (some $i in admin:database-get-range-path-indexes(
+        $CFG, $DBID) satisfies deep-equal(., $i)) then xdmp:set(
+        $CFG,
+        admin:database-delete-range-path-index($CFG, $DBID, .))
+      else (),
+      xdmp:set(
+        $CFG,
+        admin:database-add-range-path-index($CFG, $DBID, .))),
+
+    xdmp:set(
+      $CFG,
+      admin:database-set-uri-lexicon($CFG, $DBID, true())),
+    admin:save-configuration($CFG)
+  </setup>
+
+  <unit result="1" note="parse test">1</unit>
+
+  <unit note="cts:collection-reference">
+    <result><cts:collection-reference/></result>
+    <expr>
+      document { ctsref:reference(document { cts:collection-reference() }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:element-attribute-reference">
+    <result>
+      <cts:element-attribute-reference xmlns:cts="http://marklogic.com/cts">
+        <cts:parent-namespace-uri
+            >com.blakeley.cts-reference</cts:parent-namespace-uri>
+        <cts:parent-localname>test</cts:parent-localname>
+        <cts:namespace-uri>com.blakeley.cts-reference</cts:namespace-uri>
+        <cts:localname>test</cts:localname>
+        <cts:scalar-type>string</cts:scalar-type>
+        <cts:collation>http://marklogic.com/collation/</cts:collation>
+      </cts:element-attribute-reference>
+    </result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:element-attribute-reference(
+              xs:QName('ctsref:test'), xs:QName('ctsref:test')) }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:element-reference">
+    <result>
+      <cts:element-reference xmlns:cts="http://marklogic.com/cts">
+        <cts:namespace-uri>com.blakeley.cts-reference</cts:namespace-uri>
+        <cts:localname>test</cts:localname>
+        <cts:scalar-type>string</cts:scalar-type>
+        <cts:collation>http://marklogic.com/collation/</cts:collation>
+      </cts:element-reference>
+    </result>
+    <expr>
+      document {
+        ctsref:reference(
+          document { cts:element-reference(xs:QName('ctsref:test')) }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:field-reference">
+    <result>
+      <cts:field-reference xmlns:cts="http://marklogic.com/cts">
+        <cts:field-name>ctsref:test</cts:field-name>
+        <cts:scalar-type>string</cts:scalar-type>
+        <cts:collation>http://marklogic.com/collation/</cts:collation>
+      </cts:field-reference>
+    </result>
+    <expr>
+      document {
+        ctsref:reference(document { cts:field-reference('ctsref:test') }/*) }/*
+    </expr>
+  </unit>
+
+<!--
+  <unit note="cts:geospatial-attribute-pair-reference">
+    <result><cts:TODO-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:geospatial-attribute-pair-reference(
+              xs:QName('ctsref:test'),
+              xs:QName('ctsref:test-lat'), xs:QName('ctsref:test-lon')) }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:geospatial-element-child-reference">
+    <result><cts:TODO-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:geospatial-element-child-reference(
+              xs:QName('ctsref:test'), xs:QName('ctsref:test-child')) }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:geospatial-element-pair-reference">
+    <result><cts:TODO-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:geospatial-element-pair-reference(
+              xs:QName('ctsref:test'),
+              xs:QName('ctsref:test-lat'), xs:QName('ctsref:test-lon')) }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:geospatial-element-reference">
+    <result><cts:TODO-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:geospatial-element-reference('ctsref:test') }/*) }/*
+    </expr>
+  </unit>
+
+  <unit note="cts:path-reference">
+    <result><cts:TODO-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(
+          document {
+            cts:path-reference('/ctsref:test/ctsref:test/ctsref:test') }/*) }/*
+    </expr>
+  </unit>
+-->
+
+  <unit note="cts:uri-reference">
+    <result><cts:uri-reference/></result>
+    <expr>
+      document {
+        ctsref:reference(document { cts:uri-reference() }/*) }/*
+    </expr>
+  </unit>
+
+</suite>
