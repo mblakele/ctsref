@@ -248,4 +248,38 @@
     </expr>
   </unit>
 
+  <unit note="collation">
+    <result xsi:type="xs:boolean">true</result>
+    <expr>
+      $COLL eq ctsref:collation(
+        cts:element-reference(xs:QName('ctsref:test')))
+    </expr>
+  </unit>
+
+  <unit note="qnames">
+    <result xsi:type="xs:boolean">true</result>
+    <expr>
+      deep-equal(
+        xs:QName('ctsref:test'),
+        ctsref:qnames(
+          cts:element-reference(xs:QName('ctsref:test'))))
+    </expr>
+  </unit>
+
+  <unit note="range-query-options">
+    <result xsi:type="xs:boolean">true</result>
+    <expr>
+      'collation='||$COLL eq ctsref:range-query-options(
+        cts:element-reference(xs:QName('ctsref:test')))
+    </expr>
+  </unit>
+
+  <unit note="scalar-type">
+    <result xsi:type="cts:scalar-type">string</result>
+    <expr>
+      ctsref:scalar-type(
+        cts:element-reference(xs:QName('ctsref:test')))
+    </expr>
+  </unit>
+
 </suite>

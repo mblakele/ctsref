@@ -88,4 +88,37 @@ declare function cr:reference($n as element())
   default return error((), 'UNIMPLEMENTED', xdmp:describe($n))
 };
 
+declare function cr:collation($ref as cts:reference)
+as xs:string?
+{
+  document { $ref }/*/cts:collation
+};
+
+declare function cr:qnames($ref as cts:reference)
+as xs:QName+
+{
+  typeswitch($ref)
+  (: These two are undocumented - but do not really matter anyway. :)
+  case cts:collection-reference return xs:QName('xdmp:collection')
+  case cts:uri-reference return xs:QName('xdmp:document')
+  case cts:element-reference return document { $ref }/*/QName(
+    cts:namespace-uri, cts:localname)
+  case cts:element-attribute-reference return document { $ref }/*/(
+    QName(cts:parent-namespace-uri, cts:parent-localname),
+    QName(cts:namespace-uri, cts:localname))
+  default return error((), 'UNIMPLEMENTED')
+};
+
+declare function cr:range-query-options($ref as cts:reference)
+as xs:string?
+{
+  cr:collation($ref) ! ('collation='||.)
+};
+
+declare function cr:scalar-type($ref as cts:reference)
+as cts:scalar-type?
+{
+  document { $ref }/*/cts:scalar-type
+};
+
 (: cts-reference.xqy :)
